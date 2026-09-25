@@ -1,12 +1,11 @@
 // api/analyze.js
 // Vercel Serverless Function (Node.js runtime, zero extra dependencies).
 //
-// Receives one typing-test session and returns AI-generated coaching:
+// Uses Google's Gemini API (free tier, no credit card required) to analyze
+// a typing session and generate a follow-up practice paragraph.
+//
 //   POST body: { wpm, accuracy, errors, errorMap, paragraph }
 //   response:  { feedback: string, nextParagraph: string }
-//
-// Uses OpenAI's Chat Completions API. To switch to Gemini instead, see the
-// commented block at the bottom of this file and the README.
 
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
@@ -14,9 +13,9 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    res.status(500).json({ error: "OPENAI_API_KEY is not configured on the server." });
+    res.status(500).json({ error: "GEMINI_API_KEY is not configured on the server." });
     return;
   }
 
@@ -34,30 +33,32 @@ Stats: ${wpm} WPM, ${accuracy}% accuracy, ${errors} total errors.
 Most-missed characters: ${worstKeys}.
 Original passage: "${paragraph}"
 
-Reply with ONLY a valid JSON object, no markdown fences, in exactly this shape:
+Reply with ONLY a JSON object in exactly this shape:
 {"feedback": "2-3 short, specific, encouraging sentences that reference the actual weak keys and how to fix them", "nextParagraph": "a new 30-45 word natural-sounding English practice paragraph that reuses the user's weak characters more often than normal, no offensive content"}`;
 
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.7,
-      }),
-    });
+    const response = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
+        },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: { responseMimeType: "application/json", temperature: 0.7 },
+        }),
+      }
+    );
 
     if (!response.ok) {
       const errText = await response.text();
-      throw new Error(`OpenAI API error: ${errText}`);
+      throw new Error(`Gemini API error: ${errText}`);
     }
 
     const data = await response.json();
-    const raw = data.choices?.[0]?.message?.content?.trim() || "{}";
+    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "{}";
     const cleaned = raw.replace(/```json|```/g, "").trim();
     const parsed = JSON.parse(cleaned);
 
@@ -70,19 +71,3 @@ Reply with ONLY a valid JSON object, no markdown fences, in exactly this shape:
     res.status(500).json({ error: "AI analysis failed", details: String(err.message || err) });
   }
 };
-
-// ------------------------------------------------------------------
-// To use Google Gemini's free tier instead of OpenAI, replace the fetch
-// call above with something like:
-//
-// const response = await fetch(
-//   `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-//   {
-//     method: "POST",
-//     headers: { "Content-Type": "application/json" },
-//     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-//   }
-// );
-// const data = await response.json();
-// const raw = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "{}";
-// ------------------------------------------------------------------
