@@ -7,6 +7,43 @@
 //   POST body: { wpm, accuracy, errors, errorMap, paragraph }
 //   response:  { feedback: string, nextParagraph: string }
 
+// Tried in order. If one is temporarily overloaded (503) or rate-limited
+// (429), we fall through to the next rather than failing the whole request.
+const MODELS_TO_TRY = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-2.5-flash-lite"];
+
+async function callGemini(apiKey, prompt) {
+  let lastError;
+  for (const model of MODELS_TO_TRY) {
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey,
+          },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: "application/json", temperature: 0.7 },
+          }),
+        }
+      );
+
+      if (response.ok) return response.json();
+
+      const errText = await response.text();
+      lastError = new Error(`Gemini API error (${model}): ${errText}`);
+
+      // Only worth trying the next model for transient overload/rate-limit.
+      if (response.status !== 503 && response.status !== 429) break;
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError;
+}
+
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
@@ -37,27 +74,7 @@ Reply with ONLY a JSON object in exactly this shape:
 {"feedback": "2-3 short, specific, encouraging sentences that reference the actual weak keys and how to fix them", "nextParagraph": "a new 30-45 word natural-sounding English practice paragraph that reuses the user's weak characters more often than normal, no offensive content"}`;
 
   try {
-    const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": apiKey,
-        },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: { responseMimeType: "application/json", temperature: 0.7 },
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Gemini API error: ${errText}`);
-    }
-
-    const data = await response.json();
+    const data = await callGemini(apiKey, prompt);
     const raw = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "{}";
     const cleaned = raw.replace(/```json|```/g, "").trim();
     const parsed = JSON.parse(cleaned);
