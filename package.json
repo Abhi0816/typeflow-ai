@@ -1,0 +1,9 @@
+{
+  "name": "typeflow-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI-powered interactive typing speed tester (TE Third Year practical round)",
+  "scripts": {
+    "dev": "vercel dev"
+  }
+}

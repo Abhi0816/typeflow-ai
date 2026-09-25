@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TypeFlow — AI Typing Speed Tester</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+
+    <header class="app-header">
+      <p class="kicker">practical round · TE third year</p>
+      <h1>TypeFlow</h1>
+      <p class="subtitle">Type the passage below. Your timer starts the moment you press the first key.</p>
+    </header>
+
+    <section class="stats-bar" aria-label="live stats">
+      <div class="stat">
+        <span class="stat-value" id="timeStat">0.0s</span>
+        <span class="stat-label">time</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-value" id="wpmStat">0</span>
+        <span class="stat-label">wpm</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-value" id="accuracyStat">100%</span>
+        <span class="stat-label">accuracy</span>
+      </div>
+    </section>
+
+    <main class="typing-area">
+      <div class="paragraph-display" id="paragraphDisplay" aria-live="off"></div>
+      <textarea
+        id="hiddenInput"
+        class="hidden-input"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+        aria-label="Typing input"
+      ></textarea>
+      <p class="hint" id="hintText">Click the passage above, then start typing.</p>
+    </main>
+
+    <div class="controls">
+      <button id="restartBtn" class="btn">new passage</button>
+    </div>
+
+    <section class="results-panel hidden" id="resultsPanel">
+      <h2>session complete</h2>
+
+      <div class="results-grid">
+        <div class="result">
+          <span class="result-value" id="finalWpm">0</span>
+          <span class="result-label">wpm</span>
+        </div>
+        <div class="result">
+          <span class="result-value" id="finalAccuracy">0%</span>
+          <span class="result-label">accuracy</span>
+        </div>
+        <div class="result">
+          <span class="result-value" id="finalTime">0s</span>
+          <span class="result-label">time</span>
+        </div>
+        <div class="result">
+          <span class="result-value" id="finalErrors">0</span>
+          <span class="result-label">errors</span>
+        </div>
+      </div>
+
+      <div class="ai-panel">
+        <h3>ai coach</h3>
+        <div id="aiFeedback" class="ai-feedback">
+          <div class="ai-loading">Analyzing your session…</div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
