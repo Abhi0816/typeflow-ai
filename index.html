@@ -33,6 +33,11 @@
         <span class="stat-value" id="accuracyStat">100%</span>
         <span class="stat-label">accuracy</span>
       </div>
+      <div class="wpm-graph-wrap" aria-hidden="true">
+        <svg id="wpmGraph" viewBox="0 0 300 80" preserveAspectRatio="none">
+          <polyline id="wpmLine" points="" />
+        </svg>
+      </div>
     </section>
 
     <main class="typing-area">
@@ -52,6 +57,11 @@
     <div class="controls">
       <button id="restartBtn" class="btn">new passage</button>
     </div>
+
+    <section class="keyboard-section">
+      <h3>key accuracy <span class="section-note">(builds up across every passage this session)</span></h3>
+      <div id="keyboardHeatmap" class="keyboard"></div>
+    </section>
 
     <section class="results-panel hidden" id="resultsPanel">
       <h2>session complete</h2>
@@ -80,6 +90,12 @@
         <div id="aiFeedback" class="ai-feedback">
           <div class="ai-loading">Analyzing your session…</div>
         </div>
+        <button id="speakBtn" class="btn btn-small hidden">🔊 replay feedback</button>
+      </div>
+
+      <div class="history-panel">
+        <h3>your progress on this device</h3>
+        <div id="historyContent"></div>
       </div>
     </section>
 
